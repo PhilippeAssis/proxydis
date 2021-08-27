@@ -1,5 +1,6 @@
 [workspace]
 members = [
-    "cache",
-    "http",
+    "runtime",
+    "core/cache",
+    "modules/http",
 ]
