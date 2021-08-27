@@ -4,6 +4,15 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+fn time_now() -> u128 {
+    let start = SystemTime::now();
+    let since_the_epoch = start
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards");
+
+    since_the_epoch.as_millis()
+}
+
 #[derive(PartialEq)]
 pub enum CacheOption<T> {
     Value(T),
@@ -57,16 +66,6 @@ impl<T> CacheOption<T> {
         }
     }
 }
-
-pub fn time_now() -> u128 {
-    let start = SystemTime::now();
-    let since_the_epoch = start
-        .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards");
-
-    since_the_epoch.as_millis()
-}
-
 #[derive(Default, Debug, PartialEq)]
 struct CacheValue<T> {
     pub value: T,
@@ -124,6 +123,16 @@ where
                 None => CacheOption::Empty,
             },
             None => CacheOption::Undefined,
+        }
+    }
+
+    pub fn remove(&mut self, key: &String) -> Option<Option<CacheValue<T>>> {
+        self.items.remove(key)
+    }
+
+    pub fn clean(&mut self, key: &String) {
+        if let Some(item) = self.items.get_mut(key) {
+            *item = None;
         }
     }
 }
@@ -196,5 +205,29 @@ pub mod tests {
         cache.create(key.clone());
 
         assert_eq!(cache.get(&key).unwrap_or(value.clone()), value);
+    }
+
+    #[test]
+    fn value_remove() {
+        let mut cache = Cache::<DataTest>::new(1000);
+        let key = "key".to_string();
+        let value = DataTest::default();
+        cache.create(key.clone());
+        cache.update(&key, value.clone());
+        cache.remove(&key);
+
+        assert_eq!(cache.get(&key).is_undefined(), true);
+    }
+
+    #[test]
+    fn value_clean() {
+        let mut cache = Cache::<DataTest>::new(1000);
+        let key = "key".to_string();
+        let value = DataTest::default();
+        cache.create(key.clone());
+        cache.update(&key, value.clone());
+        cache.clean(&key);
+
+        assert_eq!(cache.get(&key).is_empty(), true);
     }
 }
